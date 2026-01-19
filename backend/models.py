@@ -32,6 +32,14 @@ class ReviewResponse(BaseModel):
         ...,
         description="Final review decision: APPROVE or REQUEST_CHANGES"
     )
+    github_comment_posted: bool = Field(
+        default=False,
+        description="Whether the review was posted as a comment on GitHub"
+    )
+    github_comment_url: Optional[str] = Field(
+        default=None,
+        description="URL of the posted GitHub comment if posted"
+    )
 
 
 class ReviewRequest(BaseModel):
@@ -40,6 +48,10 @@ class ReviewRequest(BaseModel):
         ...,
         description="GitHub PR URL (e.g., https://github.com/owner/repo/pull/123)",
         examples=["https://github.com/facebook/react/pull/1"]
+    )
+    post_to_github: bool = Field(
+        default=False,
+        description="Whether to post the review as a comment on the GitHub PR"
     )
 
 

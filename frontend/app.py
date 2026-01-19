@@ -22,11 +22,11 @@ def check_api_status() -> Optional[dict]:
     return None
 
 
-def submit_review(pr_url: str) -> dict:
+def submit_review(pr_url: str, post_to_github: bool = False) -> dict:
     """Submit a PR URL for review."""
     response = requests.post(
         f"{API_URL}/review",
-        json={"pr_url": pr_url},
+        json={"pr_url": pr_url, "post_to_github": post_to_github},
         timeout=120  # LLM calls can take a while
     )
     return response.json(), response.status_code
@@ -168,9 +168,9 @@ def main():
         st.markdown("### 📖 How to Use")
         st.markdown("""
         1. Paste a GitHub PR URL
-        2. Click **Run Review**
-        3. Wait for AI analysis
-        4. Review the feedback
+        2. (Optional) Check the box to post review to GitHub
+        3. Click **Run Review**
+        4. View results here and/or on GitHub
         """)
         
         st.divider()
@@ -198,6 +198,13 @@ def main():
             use_container_width=True
         )
     
+    # Add checkbox for posting to GitHub
+    post_to_github = st.checkbox(
+        "💬 **Post review as comment directly to GitHub PR**",
+        value=False,
+        help="Requires GITHUB_TOKEN to be configured. The review will be posted as a comment on the PR in addition to showing results here."
+    )
+    
     st.divider()
     
     # Review logic
@@ -213,11 +220,22 @@ def main():
             else:
                 with st.spinner("🔍 Analyzing Pull Request... This may take 30-60 seconds."):
                     try:
-                        result, status_code = submit_review(pr_url)
+                        result, status_code = submit_review(pr_url, post_to_github)
                         
                         if status_code == 200:
                             # Success - display results
                             st.success("Review completed successfully!")
+                            
+                            # Show GitHub comment status if posting was requested
+                            if post_to_github:
+                                if result.get("github_comment_posted", False):
+                                    comment_url = result.get("github_comment_url")
+                                    if comment_url:
+                                        st.success(f"✅ Review posted to GitHub! [View comment]({comment_url})")
+                                    else:
+                                        st.success("✅ Review posted to GitHub!")
+                                else:
+                                    st.warning("⚠️ Review generated but could not be posted to GitHub. Check that GITHUB_TOKEN is configured and has write permissions.")
                             
                             # Decision badge
                             st.markdown("### 📊 Review Decision")

@@ -89,10 +89,10 @@ async def create_review(request: ReviewRequest):
     Accepts a GitHub PR URL, fetches the diff, and returns an AI-generated
     structured code review with file-level comments and a final decision.
     """
-    logger.info(f"Received review request for URL: {request.pr_url}")
+    logger.info(f"Received review request for URL: {request.pr_url}, post_to_github: {request.post_to_github}")
     
     try:
-        result = await review_pull_request(request.pr_url)
+        result = await review_pull_request(request.pr_url, request.post_to_github)
         logger.info("Review request processed successfully")
         return result
     

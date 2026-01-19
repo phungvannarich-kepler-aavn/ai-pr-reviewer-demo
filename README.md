@@ -10,7 +10,8 @@ An AI-powered GitHub Pull Request reviewer that provides structured code review 
 ## ✨ Features
 
 - **🔍 PR Analysis**: Paste any GitHub PR URL to get instant AI-powered code review
-- **📝 Structured Feedback**: Receive file-level comments with specific line numbers and suggestions
+- **� GitHub Integration**: Optionally post review comments directly to PRs using GitHub API
+- **�📝 Structured Feedback**: Receive file-level comments with specific line numbers and suggestions
 - **✅ Clear Decisions**: Get APPROVE or REQUEST_CHANGES verdict with reasoning
 - **🎨 Modern UI**: Beautiful Streamlit interface with real-time status updates
 - **🔒 Secure**: API keys managed via environment variables
@@ -136,7 +137,8 @@ Submit a PR for review.
 **Request:**
 ```json
 {
-  "pr_url": "https://github.com/owner/repo/pull/123"
+  "pr_url": "https://github.com/owner/repo/pull/123",
+  "post_to_github": false  // Optional: Set to true to post review as GitHub comment
 }
 ```
 
@@ -152,7 +154,9 @@ Submit a PR for review.
       "suggestion": "Use environment variable for SECRET_KEY"
     }
   ],
-  "decision": "REQUEST_CHANGES"
+  "decision": "REQUEST_CHANGES",
+  "github_comment_posted": false,  // Whether review was posted to GitHub
+  "github_comment_url": null       // URL of GitHub comment if posted
 }
 ```
 
@@ -210,9 +214,28 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code blocks, no addition
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `OPENROUTER_API_KEY` | Your OpenRouter API key | - | ✅ Yes |
-| `GITHUB_TOKEN` | GitHub PAT for private repos | - | ❌ No |
+| `GITHUB_TOKEN` | GitHub PAT for private repos & posting comments | - | ❌ No |
 | `LLM_MODEL` | OpenRouter model ID | `anthropic/claude-3-haiku` | ❌ No |
 | `API_URL` | Backend URL (frontend only) | `http://localhost:8000` | ❌ No |
+
+### GitHub Token Permissions
+
+To post review comments directly to GitHub PRs, your `GITHUB_TOKEN` needs:
+- **Read access**: To fetch PR diffs (for any repo, public or private)
+- **Write access**: To post comments on issues/PRs (required for posting reviews)
+
+Create a Personal Access Token at [GitHub Settings > Tokens](https://github.com/settings/tokens) with:
+- Classic Token: Select `repo` scope (or `public_repo` for public repos only)
+- Fine-grained Token: Grant `Contents: Read` and `Pull requests: Read & Write`
+
+### How GitHub Comment Posting Works
+
+1. User checks "Post review as comment to GitHub PR" in the UI
+2. Backend generates the review using LLM
+3. Review is formatted as markdown with emojis and sections
+4. Backend posts the comment via GitHub API
+5. User sees the review both in the UI and as a GitHub comment
+6. GitHub comment URL is provided for quick access
 
 ### Supported LLM Models
 
@@ -264,9 +287,15 @@ https://github.com/microsoft/vscode/pull/200000
 ### cURL Example
 
 ```bash
+# Review only (show in UI)
 curl -X POST http://localhost:8000/review \
   -H "Content-Type: application/json" \
   -d '{"pr_url": "https://github.com/owner/repo/pull/123"}'
+
+# Review and post to GitHub
+curl -X POST http://localhost:8000/review \
+  -H "Content-Type: application/json" \
+  -d '{"pr_url": "https://github.com/owner/repo/pull/123", "post_to_github": true}'
 ```
 
 ## 🛡️ Security Notes
